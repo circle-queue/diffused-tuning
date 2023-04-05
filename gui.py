@@ -6,17 +6,27 @@ from PIL import Image
 import threading
 import subprocess
 import param
+import traceback
 
 pn.extension()
 
 
-class ConfigurationPanel(param.Parameterized):
-    resolution = param.Integer(default=768, bounds=(128, 768), step=128)
-    processing_time = param.Integer(default=50, bounds=(1, 100))
+def exception_handler(error):
+    traceback.print_exc()
+    pn.state.notifications.error(f"Error: {error!r}", duration=10_000)
+
+
+pn.extension(exception_handler=exception_handler, notifications=True)
+
+
+class ConfigurationPanel(Viewer, param.Parameterized):
+    resolution = param.Integer(default=768, bounds=(768, 2560), step=128)
+    processing_time = param.Integer(default=10, bounds=(1, 100))
 
 
 class GenerativePanel(Viewer, param.Parameterized):
     prompt = param.String(default="A dog with a red ball.")
+    negation_prompt = param.String(default="Cat, people, asphalt, grey, dark, lowres")
     prompt_strength = param.Number(default=7.5, bounds=(0, 25))
     run = param.Action(lambda x: x.param.trigger("run"))
     progress = param.Number(default=0, precedence=-1)
@@ -49,6 +59,7 @@ class GenerativePanel(Viewer, param.Parameterized):
                 "python",
                 "generate_image.py",
                 f"--prompt={self.prompt}",
+                f"--negative_prompt={self.negation_prompt}",
                 f"--size={self.config.resolution}",
                 f"--num_steps={self.config.processing_time}",
                 f"--guidance={self.prompt_strength}",
@@ -62,7 +73,8 @@ class GenerativePanel(Viewer, param.Parameterized):
             if line.startswith(b"PROGRESS="):
                 self.progress = int(line.replace(b"PROGRESS=", b""))
             elif line.startswith(b"IMAGE="):
-                self._img_bytes = base64.b64decode(line.replace(b"IMAGE=", b""))
+                hex_str = line.replace(b"IMAGE=", b"").decode("utf-8")
+                self._img_bytes = bytes.fromhex(hex_str)
         self.progress = 0
 
     @pn.depends("_img_bytes")
