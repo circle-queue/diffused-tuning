@@ -39,13 +39,14 @@ class Canvas(ReactiveHTML):
         "start": """
           state.start = event
           state.ctx.beginPath()
-          state.ctx.moveTo(state.start.offsetX, state.start.offsetY)
+          state.ctx.ellipse(event.offsetX, event.offsetY, data.line_width, data.line_width, 0, 0, 2 * Math.PI)
+          state.ctx.fill()
         """,
         "draw": """
           if (state.start == null)
             return
-          state.ctx.lineTo(event.offsetX, event.offsetY)
-          state.ctx.stroke()
+          state.ctx.ellipse(event.offsetX, event.offsetY, data.line_width, data.line_width, 0, 0, 2 * Math.PI)
+          state.ctx.fill()
         """,
         "end": """
           delete state.start
