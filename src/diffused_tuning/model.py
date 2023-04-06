@@ -3,20 +3,22 @@ import functools
 import diffused_tuning.util as util
 
 import torch
-from diffusers import StableDiffusionPipeline, StableDiffusionInpaintPipeline
+from diffusers import StableDiffusionPipeline, StableDiffusionInpaintPipeline, StableDiffusionUpscalePipeline
+
 
 def main():
     args = parse_args()
     model_func = {
         "inpaint": inpaint_image_from_cli,
         "generate": generate_image_from_cli,
-    }[args.model_version]
+    }[args.model_type]
 
     model_func(args)
 
+
 def parse_args():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--model-version", type=str, required=True, choices=["inpaint", "generate"])
+    parser.add_argument("--model-type", type=str, required=True, choices=["inpaint", "generate"])
     parser.add_argument("--prompt", type=str, required=True)
     parser.add_argument("--negative_prompt", type=str, required=True)
     parser.add_argument("--size", type=int, required=True)
@@ -32,7 +34,7 @@ def generate_image_from_cli(args):
     Also saves the final image to img.png.
 
     Example usage:
-    python model.py --model-version generate --prompt="A cat in a hat" --size=768 --num_steps=20 --guidance=7.5
+    python model.py --model-type generate --prompt="A cat in a hat" --size=768 --num_steps=20 --guidance=7.5
     """
     pipe = StableDiffusionPipeline.from_pretrained(
         "stabilityai/stable-diffusion-2",
@@ -52,8 +54,9 @@ def generate_image_from_cli(args):
     ).images
 
     img = images[0]
-    util.print_img_as_hex(img)
+    print(f"IMAGE={util.img_to_hex(img)}")
     img.save("img.png")
+
 
 def inpaint_image_from_cli(args):
     """
@@ -67,7 +70,7 @@ def inpaint_image_from_cli(args):
         torch_dtype=torch.float16,
     )
     pipe.to("cuda")
-    mask = util.parse_img_from_hex(args.inpaint_mask_hex)
+    mask = util.hex_to_img(args.inpaint_mask_hex)
     images = pipe(
         prompt=args.prompt,
         negative_prompt=args.negative_prompt,
@@ -81,8 +84,9 @@ def inpaint_image_from_cli(args):
     ).images
 
     img = images[0]
-    util.print_img_as_hex(img)
+    print(f"IMAGE={util.img_to_hex(img)}")
     img.save("img.png")
+
 
 if __name__ == "__main__":
     main()
