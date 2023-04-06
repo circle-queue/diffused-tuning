@@ -1,31 +1,35 @@
-# from https://panel.holoviz.org/gallery/components/CanvasDraw.html
 from PIL import Image
 from urllib import request
+import diffused_tuning.util as util
 
 import param
 import panel as pn
 
 from panel.reactive import ReactiveHTML
 
-pn.extension(template="fast")  # TODO: remove this line
-
 
 class Canvas(ReactiveHTML):
+    # adapted from https://panel.holoviz.org/gallery/components/CanvasDraw.html
     color = param.Color(default="#FFFFFF")
 
-    draw_radius = param.Integer(default=25, bounds=(1, 200))
-    uri = param.String()
+    draw_radius = param.Integer(default=0, bounds=(0, 200))
+    background_uri = param.String()
+    mask_uri = param.String()
     size = param.Integer(default=768)
 
-    def __init__(self):
+    def __init__(self, background: Image.Image):
+        self.background_uri = util.img_to_dataurl(background)
+
         super().__init__()
-        instruction_text = 'Click and drag to select areas for re-drawing'
+        instruction_text = (
+            "Click and drag to select areas for re-drawing. Use the slider to draw circles instead of areas."
+        )
         self.layout = pn.Column(instruction_text, self, self.param.draw_radius)
 
+    # style="border: 1px solid; background: url(""" f'"{data_uri}"' """);"
     _template = """
     <canvas
       id="canvas"
-      style="border: 1px solid; background: url("./assets/img.png");"
       width="${size}"
       height="${size}"
       onmousedown="${script('start')}"
@@ -38,35 +42,31 @@ class Canvas(ReactiveHTML):
 
     _scripts = {
         "render": """
-          state.ctx = canvas.getContext("2d")
+            state.ctx = canvas.getContext("2d")
+            canvas.style = "border: 2px solid; background-image: url('" + data.background_uri + "');"
+            state.ctx.fillStyle = "#FFFFFF";
         """,
         "start": """
-          state.start = event
-          state.ctx.beginPath()
-          state.ctx.fill()
+            state.start = event
+            state.ctx.beginPath();
         """,
         "draw": """
-          if (state.start == null)
-            return
-          state.ctx.ellipse(event.offsetX, event.offsetY, data.draw_radius, data.draw_radius, 0, 0, 2 * Math.PI)
-          state.ctx.fill()
+            if (state.start == null)
+                return
+            if (data.draw_radius != 0)
+                state.ctx.beginPath();
+            state.ctx.ellipse(event.offsetX, event.offsetY, data.draw_radius, data.draw_radius, 0, 0, 2 * Math.PI)
+            state.ctx.fill()
         """,
         "end": """
-          delete state.start
-          data.uri = canvas.toDataURL();
+            delete state.start
+            data.mask_uri = canvas.toDataURL();
         """,
         "clear": """
-          state.ctx.clearRect(0, 0, canvas.width, canvas.height);
-          data.uri = canvas.toDataURL();
-        """,
-        "draw_radius": """
-          state.ctx.lineWidth = data.draw_radius;
-        """,
-        "color": """
-          state.ctx.strokeStyle = data.color;
+            state.ctx.clearRect(0, 0, canvas.width, canvas.height);
+            data.mask_uri = canvas.toDataURL();
         """,
     }
-
 
 
 class InpaintingPanel(pn.viewable.Viewer, param.Parameterized):
@@ -74,22 +74,17 @@ class InpaintingPanel(pn.viewable.Viewer, param.Parameterized):
         self.canvas = canvas
         super().__init__()
 
-    @pn.depends("canvas.uri")
+    @pn.depends("canvas.mask_uri")
     def img(self):
-        if not self.canvas.uri:
+        if not self.canvas.mask_uri:
             return None
-
-        with request.urlopen(self.canvas.uri) as response:
-            binary_str = response.read()
-
-        return pn.pane.PNG(binary_str)
+        return util.dataurl_to_img(self.canvas.mask_uri)
 
     def __panel__(self):
-        return pn.Column(
-            self.canvas.layout, self.param, self.img
-        )
+        return pn.Column(self.canvas.layout, self.param, self.img)
 
 
-canvas = Canvas()
+img = Image.open("img.png")
+canvas = Canvas(img)
 view = pn.Column(InpaintingPanel(canvas))
 view.servable()
