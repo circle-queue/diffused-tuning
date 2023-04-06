@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=65"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "diffused_tuning"
+version = "0.0.0"
+description = 'An interactive tool for exploring the possibilities of Stable-Diffusion'
+readme = "README.md"
+requires-python = ">=3.10"
+authors = [
+  { name = "christoffer", email = "csom@itu.dk" },
+]
+dependencies = []
+
+[project.urls]
+Documentation = "https://github.com/csom/diffused-tuning#readme"
+Source = "https://github.com/csom/diffused-tuning"
+
+[tool.black]
+target-version = ["py310"]
+line-length = 120

@@ -1,0 +1,5 @@
+serve.bat
+imgs
+old
+__pycache__
+*.egg-info
