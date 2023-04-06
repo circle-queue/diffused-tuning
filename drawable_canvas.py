@@ -12,10 +12,15 @@ pn.extension(template="fast")  # TODO: remove this line
 
 class Canvas(ReactiveHTML):
     color = param.Color(default="#FFFFFF")
-    line_width = param.Number(default=1, bounds=(1, 200))
 
+    draw_radius = param.Integer(default=25, bounds=(1, 200))
     uri = param.String()
     size = param.Integer(default=768)
+
+    def __init__(self):
+        super().__init__()
+        instruction_text = 'Click and drag to select areas for re-drawing'
+        self.layout = pn.Column(instruction_text, self, self.param.draw_radius)
 
     _template = """
     <canvas
@@ -29,7 +34,6 @@ class Canvas(ReactiveHTML):
     >
     </canvas>
     <button id="clear" onclick='${script("clear")}'>Clear</button>
-    <button id="save" onclick='${script("save")}'>Save</button>
     """
 
     _scripts = {
@@ -39,31 +43,30 @@ class Canvas(ReactiveHTML):
         "start": """
           state.start = event
           state.ctx.beginPath()
-          state.ctx.ellipse(event.offsetX, event.offsetY, data.line_width, data.line_width, 0, 0, 2 * Math.PI)
           state.ctx.fill()
         """,
         "draw": """
           if (state.start == null)
             return
-          state.ctx.ellipse(event.offsetX, event.offsetY, data.line_width, data.line_width, 0, 0, 2 * Math.PI)
+          state.ctx.ellipse(event.offsetX, event.offsetY, data.draw_radius, data.draw_radius, 0, 0, 2 * Math.PI)
           state.ctx.fill()
         """,
         "end": """
           delete state.start
+          data.uri = canvas.toDataURL();
         """,
         "clear": """
           state.ctx.clearRect(0, 0, canvas.width, canvas.height);
-        """,
-        "save": """
           data.uri = canvas.toDataURL();
         """,
-        "line_width": """
-          state.ctx.lineWidth = data.line_width;
+        "draw_radius": """
+          state.ctx.lineWidth = data.draw_radius;
         """,
         "color": """
           state.ctx.strokeStyle = data.color;
         """,
     }
+
 
 
 class InpaintingPanel(pn.viewable.Viewer, param.Parameterized):
@@ -83,7 +86,7 @@ class InpaintingPanel(pn.viewable.Viewer, param.Parameterized):
 
     def __panel__(self):
         return pn.Column(
-            self.canvas, self.canvas.param.line_width, "", self.param, self.img
+            self.canvas.layout, self.param, self.img
         )
 
 
