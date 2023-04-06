@@ -1,4 +1,5 @@
 import argparse
+from PIL import Image
 import functools
 import diffused_tuning.util as util
 
@@ -24,13 +25,14 @@ def parse_args():
     parser.add_argument("--size", type=int, required=True)
     parser.add_argument("--num_steps", type=int, required=True)
     parser.add_argument("--guidance", type=float, required=True)
-    parser.add_argument("--inpaint-mask-hex", type=str, required=False)
+    # parser.add_argument("--inpaint-image-b64", type=str, required=False)
+    parser.add_argument("--inpaint-mask-b64", type=str, required=False)
     return parser.parse_args()
 
 
 def generate_image_from_cli(args):
     """
-    Prints the generated image as a hex string to stdout at each step.
+    Prints the generated image as a b64 string to stdout at each step.
     Also saves the final image to img.png.
 
     Example usage:
@@ -54,23 +56,27 @@ def generate_image_from_cli(args):
     ).images
 
     img = images[0]
-    print(f"IMAGE={util.img_to_hex(img)}")
+    print(f"IMAGE={util.img_to_b64(img)}")
     img.save("img.png")
 
 
 def inpaint_image_from_cli(args):
     """
-    Prints the generated image as a hex string to stdout at each step.
+    Prints the generated image as a b64 string to stdout at each step.
     Also saves the final image to img.png.
 
     CLI usage not suitable, use the GUI instead.
     """
+    assert args.inpaint_mask_b64 is not None  # and args.inpaint_image_b64 is not None
+
     pipe = StableDiffusionInpaintPipeline.from_pretrained(
         "stabilityai/stable-diffusion-2-inpainting",
         torch_dtype=torch.float16,
     )
     pipe.to("cuda")
-    mask = util.hex_to_img(args.inpaint_mask_hex)
+    # img = util.b64_to_img(util.decompress_b64(args.inpaint_image_b64))
+    img = Image.open("img.png")
+    mask = util.b64_to_img(util.decompress_b64(args.inpaint_mask_b64))
     images = pipe(
         prompt=args.prompt,
         negative_prompt=args.negative_prompt,
@@ -80,11 +86,12 @@ def inpaint_image_from_cli(args):
         guidance_scale=args.guidance,
         num_images_per_prompt=1,
         callback=functools.partial(util.pipeline_callback, pipe=pipe),
+        image=img,
         mask_image=mask,
     ).images
 
     img = images[0]
-    print(f"IMAGE={util.img_to_hex(img)}")
+    print(f"IMAGE={util.img_to_b64(img)}")
     img.save("img.png")
 
 

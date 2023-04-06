@@ -17,9 +17,7 @@ class Canvas(ReactiveHTML):
     mask_uri = param.String()
     size = param.Integer(default=768)
 
-    def __init__(self, background: Image.Image):
-        self.background_uri = util.img_to_dataurl(background)
-
+    def __init__(self):
         super().__init__()
         instruction_text = (
             "Click and drag to select areas for re-drawing. Use the slider to draw circles instead of areas."
@@ -63,28 +61,30 @@ class Canvas(ReactiveHTML):
             data.mask_uri = canvas.toDataURL();
         """,
         "clear": """
+            canvas.style = "border: 2px solid; background-image: url('" + data.background_uri + "');"
             state.ctx.clearRect(0, 0, canvas.width, canvas.height);
             data.mask_uri = canvas.toDataURL();
         """,
     }
 
 
-class InpaintingPanel(pn.viewable.Viewer, param.Parameterized):
-    def __init__(self, canvas: Canvas):
-        self.canvas = canvas
-        super().__init__()
+if __name__ == "__main__":
 
-    @pn.depends("canvas.mask_uri")
-    def img(self):
-        if not self.canvas.mask_uri:
-            return None
-        return util.dataurl_to_img(self.canvas.mask_uri)
+    class InpaintingPanel(pn.viewable.Viewer, param.Parameterized):
+        def __init__(self, canvas: Canvas):
+            self.canvas = canvas
+            super().__init__()
 
-    def __panel__(self):
-        return pn.Column(self.canvas.layout, self.param, self.img)
+        @pn.depends("canvas.mask_uri")
+        def img(self):
+            if not self.canvas.mask_uri:
+                return None
+            return util.b64_to_img(util.dataurl_to_b64(self.canvas.mask_uri))
 
+        def __panel__(self):
+            return pn.Column(self.canvas.layout, self.param, self.img)
 
-img = Image.open("img.png")
-canvas = Canvas(img)
-view = pn.Column(InpaintingPanel(canvas))
-view.servable()
+    img = Image.open("img.png")
+    canvas = Canvas(img)
+    view = pn.Column(InpaintingPanel(canvas))
+    view.servable()
