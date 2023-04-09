@@ -75,7 +75,7 @@ class GeneratePanel(Viewer, param.Parameterized):
 class ModelsPanel(Viewer, param.Parameterized):
     run = param.Action(lambda x: x.param.trigger("run"))
     _progress = param.Number(default=0, precedence=-1)
-    _img_b64 = param.String(default=util.img_to_b64(Image.open("./img.png")), precedence=-1)
+    _img_b64 = param.String(default=util.img_to_b64(Image.open(util.IMG_FILEPATH)), precedence=-1)
 
     active_model = param.ObjectSelector(
         objects=[
@@ -118,7 +118,7 @@ class ModelsPanel(Viewer, param.Parameterized):
         c = self.config
         return [
             "python",
-            "model.py",
+            str(util.PKG_ROOT / "model.py"),
             f"--prompt={c.prompt}",
             f"--negative_prompt={c.negation_prompt}",
             f"--size={c.resolution}",
@@ -156,8 +156,5 @@ def create_panel():
     return pn.Column(config, generative_panel)
 
 
-panel = create_panel()
-# if __name__ == "__main__":
-#     pn.serve(panel)
-# else:
-panel.servable()
+def serve():
+    pn.serve(create_panel())

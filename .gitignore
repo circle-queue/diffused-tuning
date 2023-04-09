@@ -3,3 +3,4 @@ imgs
 old
 __pycache__
 *.egg-info
+venv

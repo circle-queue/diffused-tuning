@@ -11,7 +11,15 @@ requires-python = ">=3.10"
 authors = [
   { name = "christoffer", email = "csom@itu.dk" },
 ]
-dependencies = []
+dependencies = [
+  "bokeh<3",
+  "panel>=0.14",
+  "param",
+  "Pillow",
+  "diffusers",
+  "torch>=2",
+  "xformers",
+]
 
 [project.urls]
 Documentation = "https://github.com/csom/diffused-tuning#readme"
@@ -20,3 +28,6 @@ Source = "https://github.com/csom/diffused-tuning"
 [tool.black]
 target-version = ["py310"]
 line-length = 120
+
+[project.scripts]
+diffused-gui = "diffused_tuning.gui:serve"

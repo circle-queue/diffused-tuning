@@ -57,7 +57,7 @@ def generate_image_from_cli(args):
 
     img = images[0]
     print(f"IMAGE={util.img_to_b64(img)}")
-    img.save("img.png")
+    img.save(util.IMG_FILEPATH)
 
 
 def inpaint_image_from_cli(args):
@@ -75,7 +75,7 @@ def inpaint_image_from_cli(args):
     )
     pipe.to("cuda")
     # img = util.b64_to_img(util.decompress_b64(args.inpaint_image_b64))
-    img = Image.open("img.png")
+    img = Image.open(util.IMG_FILEPATH)
     mask = util.b64_to_img(util.decompress_b64(args.inpaint_mask_b64))
     images = pipe(
         prompt=args.prompt,
@@ -92,7 +92,7 @@ def inpaint_image_from_cli(args):
 
     img = images[0]
     print(f"IMAGE={util.img_to_b64(img)}")
-    img.save("img.png")
+    img.save(util.IMG_FILEPATH)
 
 
 if __name__ == "__main__":

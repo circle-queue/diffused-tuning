@@ -1,10 +1,15 @@
 import io
 import base64
 import gzip
+from pathlib import Path
 
 
 import torch
 from PIL import Image
+import diffused_tuning
+
+PKG_ROOT = Path(diffused_tuning.__path__[0])
+IMG_FILEPATH = PKG_ROOT / f"img.png"
 
 
 def b64_to_img(b64_str: str) -> Image.Image:
