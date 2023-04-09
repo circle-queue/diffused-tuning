@@ -75,7 +75,7 @@ class GeneratePanel(Viewer, param.Parameterized):
 class ModelsPanel(Viewer, param.Parameterized):
     run = param.Action(lambda x: x.param.trigger("run"))
     _progress = param.Number(default=0, precedence=-1)
-    _img_b64 = param.String(default=util.img_to_b64(Image.open("./assets/img.png")), precedence=-1)
+    _img_b64 = param.String(default=util.img_to_b64(Image.open("./img.png")), precedence=-1)
 
     active_model = param.ObjectSelector(
         objects=[
@@ -90,6 +90,7 @@ class ModelsPanel(Viewer, param.Parameterized):
         self.model_tabs = pn.Tabs(*self.param.active_model.objects, dynamic=True)
 
         super().__init__(**params)
+        self.active_model = self.param.active_model.objects[self.model_tabs.active]
         self._update_inpaint_background()
         self._layout = pn.Column(self.model_tabs, self.param.run, self.progress_bar, self.image, width=800)
 
